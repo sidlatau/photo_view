@@ -258,6 +258,7 @@ class PhotoView extends StatefulWidget {
     this.disableGestures,
     this.errorBuilder,
     this.enablePanAlways,
+    this.allowDrag,
   })  : child = null,
         childSize = null,
         super(key: key);
@@ -292,6 +293,7 @@ class PhotoView extends StatefulWidget {
     this.filterQuality,
     this.disableGestures,
     this.enablePanAlways,
+    this.allowDrag,
   })  : errorBuilder = null,
         imageProvider = null,
         gaplessPlayback = false,
@@ -375,6 +377,8 @@ class PhotoView extends StatefulWidget {
   /// A pointer that will trigger a scale has stopped contacting the screen at a
   /// particular location.
   final PhotoViewImageScaleEndCallback? onScaleEnd;
+
+  final PhotoViewImageAllowDragCallback? allowDrag;
 
   /// [HitTestBehavior] to be passed to the internal gesture detector.
   final HitTestBehavior? gestureDetectorBehavior;
@@ -512,6 +516,7 @@ class _PhotoViewState extends State<PhotoView> {
                 filterQuality: widget.filterQuality,
                 disableGestures: widget.disableGestures,
                 enablePanAlways: widget.enablePanAlways,
+                allowDrag: widget.allowDrag,
               )
             : ImageWrapper(
                 imageProvider: widget.imageProvider!,
@@ -538,6 +543,7 @@ class _PhotoViewState extends State<PhotoView> {
                 disableGestures: widget.disableGestures,
                 errorBuilder: widget.errorBuilder,
                 enablePanAlways: widget.enablePanAlways,
+                allowDrag: widget.allowDrag,
               );
       },
     );
@@ -581,6 +587,8 @@ typedef PhotoViewImageTapDownCallback = Function(
   TapDownDetails details,
   PhotoViewControllerValue controllerValue,
 );
+
+typedef PhotoViewImageAllowDragCallback = bool Function();
 
 /// A type definition for a callback when a user finished scale
 typedef PhotoViewImageScaleEndCallback = Function(

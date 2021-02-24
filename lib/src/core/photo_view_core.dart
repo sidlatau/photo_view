@@ -2,17 +2,18 @@ import 'package:flutter/widgets.dart';
 
 import 'package:photo_view/photo_view.dart'
     show
-        PhotoViewScaleState,
         PhotoViewHeroAttributes,
+        PhotoViewImageAllowDragCallback,
         PhotoViewImageTapDownCallback,
         PhotoViewImageTapUpCallback,
         PhotoViewImageScaleEndCallback,
+        PhotoViewScaleState,
         ScaleStateCycle;
 import 'package:photo_view/src/controller/photo_view_controller.dart';
 import 'package:photo_view/src/controller/photo_view_controller_delegate.dart';
 import 'package:photo_view/src/controller/photo_view_scalestate_controller.dart';
 import 'package:photo_view/src/utils/photo_view_utils.dart';
-import 'package:photo_view/src/core/photo_view_gesture_detector.dart';
+import 'package:gesture_x_detector/gesture_x_detector.dart';
 import 'package:photo_view/src/core/photo_view_hit_corners.dart';
 
 const _defaultDecoration = const BoxDecoration(
@@ -42,7 +43,8 @@ class PhotoViewCore extends StatefulWidget {
     required this.filterQuality,
     required this.disableGestures,
     required this.enablePanAlways,
-  })  : customChild = null,
+    required this.allowDrag,
+  })   : customChild = null,
         super(key: key);
 
   const PhotoViewCore.customChild({
@@ -64,7 +66,8 @@ class PhotoViewCore extends StatefulWidget {
     required this.filterQuality,
     required this.disableGestures,
     required this.enablePanAlways,
-  })  : imageProvider = null,
+    required this.allowDrag,
+  })   : imageProvider = null,
         gaplessPlayback = false,
         super(key: key);
 
@@ -84,6 +87,7 @@ class PhotoViewCore extends StatefulWidget {
   final PhotoViewImageTapUpCallback? onTapUp;
   final PhotoViewImageTapDownCallback? onTapDown;
   final PhotoViewImageScaleEndCallback? onScaleEnd;
+  final PhotoViewImageAllowDragCallback? allowDrag;
 
   final HitTestBehavior? gestureDetectorBehavior;
   final bool tightMode;
@@ -139,16 +143,16 @@ class PhotoViewCoreState extends State<PhotoViewCore>
     controller.rotation = _rotationAnimation!.value;
   }
 
-  void onScaleStart(ScaleStartDetails details) {
+  void onScaleStart(Offset focusPoint) {
     _rotationBefore = controller.rotation;
     _scaleBefore = scale;
-    _normalizedPosition = details.focalPoint - controller.position;
+    _normalizedPosition = focusPoint - controller.position;
     _scaleAnimationController.stop();
     _positionAnimationController.stop();
     _rotationAnimationController.stop();
   }
 
-  void onScaleUpdate(ScaleUpdateDetails details) {
+  void onScaleUpdate(ScaleEvent details) {
     final double newScale = _scaleBefore! * details.scale;
     final Offset delta = details.focalPoint - _normalizedPosition!;
 
@@ -159,19 +163,24 @@ class PhotoViewCoreState extends State<PhotoViewCore>
       position: widget.enablePanAlways
           ? delta
           : clampPosition(position: delta * details.scale),
-      rotation:
-          widget.enableRotation ? _rotationBefore! + details.rotation : null,
+      rotation: widget.enableRotation
+          ? _rotationBefore! + details.rotationAngle
+          : null,
       rotationFocusPoint: widget.enableRotation ? details.focalPoint : null,
     );
   }
 
-  void onScaleEnd(ScaleEndDetails details) {
+  void onMoveUpdate(Offset delta) {
+    updateMultiple(
+      position: clampPosition(position: controller.position + delta),
+    );
+  }
+
+  void onScaleEnd() {
     final double _scale = scale;
     final Offset _position = controller.position;
     final double maxScale = scaleBoundaries.maxScale;
     final double minScale = scaleBoundaries.minScale;
-
-    widget.onScaleEnd?.call(context, details, controller.value);
 
     //animate back to maxScale if gesture exceeded the maxScale specified
     if (_scale > maxScale) {
@@ -197,17 +206,6 @@ class PhotoViewCoreState extends State<PhotoViewCore>
         ),
       );
       return;
-    }
-    // get magnitude from gesture velocity
-    final double magnitude = details.velocity.pixelsPerSecond.distance;
-
-    // animate velocity only if there is no scale change and a significant magnitude
-    if (_scaleBefore! / _scale == 1.0 && magnitude >= 400.0) {
-      final Offset direction = details.velocity.pixelsPerSecond / magnitude;
-      animatePosition(
-        _position,
-        clampPosition(position: _position + direction * 100.0),
-      );
     }
   }
 
@@ -340,19 +338,18 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               return child;
             }
 
-            return PhotoViewGestureDetector(
+            return XGestureDetector(
               child: child,
-              onDoubleTap: nextScaleState,
+              onDoubleTap: (_) => nextScaleState(),
               onScaleStart: onScaleStart,
               onScaleUpdate: onScaleUpdate,
               onScaleEnd: onScaleEnd,
-              hitDetector: this,
-              onTapUp: widget.onTapUp != null
-                  ? (details) => widget.onTapUp!(context, details, value)
-                  : null,
-              onTapDown: widget.onTapDown != null
-                  ? (details) => widget.onTapDown!(context, details, value)
-                  : null,
+              onMoveUpdate: (moveEvent) {
+                final allowDrag = widget.allowDrag;
+                if (allowDrag == null || allowDrag()) {
+                  onMoveUpdate(moveEvent.delta);
+                }
+              },
             );
           } else {
             return Container();
