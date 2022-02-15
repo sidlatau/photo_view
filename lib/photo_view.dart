@@ -408,7 +408,8 @@ class PhotoView extends StatefulWidget {
   }
 }
 
-class _PhotoViewState extends State<PhotoView> {
+class _PhotoViewState extends State<PhotoView>
+    with AutomaticKeepAliveClientMixin {
   // image retrieval
 
   // controller
@@ -548,6 +549,9 @@ class _PhotoViewState extends State<PhotoView> {
       },
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 /// The default [ScaleStateCycle]

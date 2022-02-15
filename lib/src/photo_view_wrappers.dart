@@ -68,15 +68,35 @@ class ImageWrapper extends StatefulWidget {
 class _ImageWrapperState extends State<ImageWrapper> {
   ImageStreamListener? _imageStreamListener;
   ImageStream? _imageStream;
-  ImageChunkEvent? _imageChunkEvent;
+  ImageChunkEvent? _loadingProgress;
   ImageInfo? _imageInfo;
   bool _loading = true;
   Size? _imageSize;
   Object? _lastException;
-  StackTrace? _stackTrace;
+  StackTrace? _lastStack;
+
+  @override
+  void dispose() {
+    super.dispose();
+    _stopImageStream();
+  }
+
+  @override
+  void didChangeDependencies() {
+    _resolveImage();
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(ImageWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.imageProvider != oldWidget.imageProvider) {
+      _resolveImage();
+    }
+  }
 
   // retrieve image from the provider
-  void _getImage() {
+  void _resolveImage() {
     final ImageStream newStream = widget.imageProvider.resolve(
       const ImageConfiguration(),
     );
@@ -85,8 +105,10 @@ class _ImageWrapperState extends State<ImageWrapper> {
 
   ImageStreamListener _getOrCreateListener() {
     void handleImageChunk(ImageChunkEvent event) {
-      assert(widget.loadingBuilder != null);
-      setState(() => _imageChunkEvent = event);
+      setState(() {
+        _loadingProgress = event;
+        _lastException = null;
+      });
     }
 
     void handleImageFrame(ImageInfo info, bool synchronousCall) {
@@ -98,9 +120,9 @@ class _ImageWrapperState extends State<ImageWrapper> {
         _loading = false;
         _imageInfo = _imageInfo;
 
-        _imageChunkEvent = null;
+        _loadingProgress = null;
         _lastException = null;
-        _stackTrace = null;
+        _lastStack = null;
       };
       synchronousCall ? setupCB() : setState(setupCB);
     }
@@ -109,8 +131,12 @@ class _ImageWrapperState extends State<ImageWrapper> {
       setState(() {
         _loading = false;
         _lastException = error;
-        _stackTrace = stackTrace;
+        _lastStack = stackTrace;
       });
+      assert(() {
+        if (widget.errorBuilder == null) throw error;
+        return true;
+      }());
     }
 
     _imageStreamListener = ImageStreamListener(
@@ -133,26 +159,6 @@ class _ImageWrapperState extends State<ImageWrapper> {
 
   void _stopImageStream() {
     _imageStream?.removeListener(_imageStreamListener!);
-  }
-
-  @override
-  void didUpdateWidget(ImageWrapper oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.imageProvider != oldWidget.imageProvider) {
-      _getImage();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    _getImage();
-    super.didChangeDependencies();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _stopImageStream();
   }
 
   @override
@@ -198,11 +204,11 @@ class _ImageWrapperState extends State<ImageWrapper> {
 
   Widget _buildLoading(BuildContext context) {
     if (widget.loadingBuilder != null) {
-      return widget.loadingBuilder!(context, _imageChunkEvent);
+      return widget.loadingBuilder!(context, _loadingProgress);
     }
 
     return PhotoViewDefaultLoading(
-      event: _imageChunkEvent,
+      event: _loadingProgress,
     );
   }
 
@@ -210,7 +216,7 @@ class _ImageWrapperState extends State<ImageWrapper> {
     BuildContext context,
   ) {
     if (widget.errorBuilder != null) {
-      return widget.errorBuilder!(context, _lastException!, _stackTrace);
+      return widget.errorBuilder!(context, _lastException!, _lastStack);
     }
     return PhotoViewDefaultError(
       decoration: widget.backgroundDecoration,
