@@ -237,6 +237,7 @@ class PhotoView extends StatefulWidget {
     required this.imageProvider,
     this.loadingBuilder,
     this.backgroundDecoration,
+    this.wantKeepAlive = false,
     this.gaplessPlayback = false,
     this.heroAttributes,
     this.scaleStateChangedCallback,
@@ -274,6 +275,7 @@ class PhotoView extends StatefulWidget {
     required this.child,
     this.childSize,
     this.backgroundDecoration,
+    this.wantKeepAlive = false,
     this.heroAttributes,
     this.scaleStateChangedCallback,
     this.enableRotation = false,
@@ -313,6 +315,11 @@ class PhotoView extends StatefulWidget {
 
   /// Changes the background behind image, defaults to `Colors.black`.
   final BoxDecoration? backgroundDecoration;
+
+  /// This is used to keep the state of an image in the gallery (e.g. scale state).
+  /// `false` -> resets the state (default)
+  /// `true`  -> keeps the state
+  final bool wantKeepAlive;
 
   /// This is used to continue showing the old image (`true`), or briefly show
   /// nothing (`false`), when the `imageProvider` changes. By default it's set
@@ -484,6 +491,7 @@ class _PhotoViewState extends State<PhotoView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return LayoutBuilder(
       builder: (
         BuildContext context,
@@ -551,7 +559,7 @@ class _PhotoViewState extends State<PhotoView>
   }
 
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => widget.wantKeepAlive;
 }
 
 /// The default [ScaleStateCycle]

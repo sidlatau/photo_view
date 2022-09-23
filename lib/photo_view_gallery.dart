@@ -28,7 +28,7 @@ typedef PhotoViewGalleryBuilder = PhotoViewGalleryPageOptions Function(
 ///
 /// Some of [PhotoView] constructor options are passed direct to [PhotoViewGallery] constructor. Those options will affect the gallery in a whole.
 ///
-/// Some of the options may be defined to each image individually, such as `initialScale` or `heroAttributes`. Those must be passed via each [PhotoViewGalleryPageOptions].
+/// Some of the options may be defined to each image individually, such as `initialScale` or `PhotoViewHeroAttributes`. Those must be passed via each [PhotoViewGalleryPageOptions].
 ///
 /// Example of usage as a list of options:
 /// ```
@@ -36,11 +36,11 @@ typedef PhotoViewGalleryBuilder = PhotoViewGalleryPageOptions Function(
 ///   pageOptions: <PhotoViewGalleryPageOptions>[
 ///     PhotoViewGalleryPageOptions(
 ///       imageProvider: AssetImage("assets/gallery1.jpg"),
-///       heroAttributes: const HeroAttributes(tag: "tag1"),
+///       heroAttributes: const PhotoViewHeroAttributes(tag: "tag1"),
 ///     ),
 ///     PhotoViewGalleryPageOptions(
 ///       imageProvider: AssetImage("assets/gallery2.jpg"),
-///       heroAttributes: const HeroAttributes(tag: "tag2"),
+///       heroAttributes: const PhotoViewHeroAttributes(tag: "tag2"),
 ///       maxScale: PhotoViewComputedScale.contained * 0.3
 ///     ),
 ///     PhotoViewGalleryPageOptions(
@@ -106,6 +106,7 @@ class PhotoViewGallery extends StatefulWidget {
     required this.pageOptions,
     this.loadingBuilder,
     this.backgroundDecoration,
+    this.wantKeepAlive = false,
     this.gaplessPlayback = false,
     this.reverse = false,
     this.pageController,
@@ -129,6 +130,7 @@ class PhotoViewGallery extends StatefulWidget {
     required this.builder,
     this.loadingBuilder,
     this.backgroundDecoration,
+    this.wantKeepAlive = false,
     this.gaplessPlayback = false,
     this.reverse = false,
     this.pageController,
@@ -161,6 +163,9 @@ class PhotoViewGallery extends StatefulWidget {
 
   /// Mirror to [PhotoView.backgroundDecoration]
   final BoxDecoration? backgroundDecoration;
+
+  /// Mirror to [PhotoView.wantKeepAlive]
+  final bool wantKeepAlive;
 
   /// Mirror to [PhotoView.gaplessPlayback]
   final bool gaplessPlayback;
@@ -246,6 +251,7 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             child: pageOption.child,
             childSize: pageOption.childSize,
             backgroundDecoration: widget.backgroundDecoration,
+            wantKeepAlive: widget.wantKeepAlive,
             controller: pageOption.controller,
             scaleStateController: pageOption.scaleStateController,
             customSize: widget.customSize,
@@ -270,6 +276,7 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             imageProvider: pageOption.imageProvider,
             loadingBuilder: widget.loadingBuilder,
             backgroundDecoration: widget.backgroundDecoration,
+            wantKeepAlive: widget.wantKeepAlive,
             controller: pageOption.controller,
             scaleStateController: pageOption.scaleStateController,
             customSize: widget.customSize,
